@@ -104,8 +104,11 @@ object Play20Plugin extends Plugin {
       """#!/usr/bin/env sh
 scriptdir=`dirname $0`
 classpath=""" + dependencies.map { case (jar, path) => "$scriptdir/" + path }.mkString("\"", ":", "\"") + """
-exec """ + javaCommand + """ $* -cp $classpath """ + javaOptions.map(opts => opts + " ").getOrElse("")  + customConfigFilename.map(fn => "-Dconfig.file=`dirname $0`/conf/" + fn + " ").getOrElse("-Dconfig.file=`dirname $0`/conf/application.conf ") + """play.core.server.NettyServer `dirname $0`
-                                                                                                                                                                                                                                                         """ /* */ )
+exec """ + javaCommand + """ $* -cp $classpath """ + javaOptions.map(opts => opts + " ")
+.getOrElse("")
+  + customConfigFilename.map(fn => "-Dconfig.file=`dirname $0`/conf/" + fn + " ")
+  .getOrElse("-Dconfig.file=`dirname $0`/conf/application.conf ")
+  + """play.core.server.NettyServer `dirname $0` $*""" /* */ )
   }
 
   def getDependencyToZipLocationMappings(dependencies:Id[Keys.Classpath]) : Seq[(File, String)] = dependencies.filter(_.data.ext == "jar").map { dependency =>
@@ -113,7 +116,8 @@ exec """ + javaCommand + """ $* -cp $classpath """ + javaOptions.map(opts => opt
       module <- dependency.metadata.get(AttributeKey[ModuleID]("module-id"))
       artifact <- dependency.metadata.get(AttributeKey[Artifact]("artifact"))
     } yield {
-      module.organization + "." + module.name + "-" + Option(artifact.name.replace(module.name, "")).filterNot(_.isEmpty).map(_ + "-").getOrElse("") + module.revision + ".jar"
+      module.organization + "." + module.name + "-" + Option(artifact.name.replace(module.name, ""))
+      .filterNot(_.isEmpty).map(_ + "-").getOrElse("") + module.revision + ".jar"
     }
     val path = ("lib/" + filename.getOrElse(dependency.data.getName))
     dependency.data -> path
